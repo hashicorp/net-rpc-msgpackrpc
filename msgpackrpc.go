@@ -1,3 +1,6 @@
+// Package msgpackrpc implements a MessagePack-RPC ClientCodec and ServerCodec
+// for the rpc package, using the same API as the Go standard library
+// for jsonrpc.
 package msgpackrpc
 
 import (
