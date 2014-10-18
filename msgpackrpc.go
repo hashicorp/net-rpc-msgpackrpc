@@ -4,7 +4,7 @@
 package msgpackrpc
 
 import (
-	"github.com/ugorji/go/codec"
+	"github.com/hashicorp/go-msgpack/codec"
 	"io"
 	"net"
 	"net/rpc"
