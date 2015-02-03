@@ -4,7 +4,6 @@
 package msgpackrpc
 
 import (
-	"github.com/hashicorp/go-msgpack/codec"
 	"io"
 	"net"
 	"net/rpc"
@@ -27,14 +26,12 @@ func NewClient(conn io.ReadWriteCloser) *rpc.Client {
 
 // NewClientCodec returns a new rpc.ClientCodec using MessagePack-RPC on conn.
 func NewClientCodec(conn io.ReadWriteCloser) rpc.ClientCodec {
-	handle := new(codec.MsgpackHandle)
-	return codec.GoRpc.ClientCodec(conn, handle)
+	return NewCodec(true, true, conn)
 }
 
 // NewServerCodec returns a new rpc.ServerCodec using MessagePack-RPC on conn.
 func NewServerCodec(conn io.ReadWriteCloser) rpc.ServerCodec {
-	handle := new(codec.MsgpackHandle)
-	return codec.GoRpc.ServerCodec(conn, handle)
+	return NewCodec(true, true, conn)
 }
 
 // ServeConn runs the MessagePack-RPC server on a single connection. ServeConn
