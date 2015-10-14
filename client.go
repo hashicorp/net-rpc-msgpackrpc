@@ -1,6 +1,7 @@
 package msgpackrpc
 
 import (
+	"fmt"
 	"net/rpc"
 	"sync/atomic"
 )
@@ -20,14 +21,14 @@ func CallWithCodec(cc rpc.ClientCodec, method string, args interface{}, resp int
 		ServiceMethod: method,
 	}
 	if err := cc.WriteRequest(&request, args); err != nil {
-		return err
+		return fmt.Errorf("failed writing request: %v", err)
 	}
 	var response rpc.Response
 	if err := cc.ReadResponseHeader(&response); err != nil {
-		return err
+		return fmt.Errorf("failed reading response header: %v", err)
 	}
 	if err := cc.ReadResponseBody(resp); err != nil {
-		return err
+		return fmt.Errorf("failed reading response body: %v", err)
 	}
 	if response.Error != "" {
 		return rpc.ServerError(response.Error)
