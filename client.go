@@ -26,11 +26,12 @@ func CallWithCodec(cc rpc.ClientCodec, method string, args interface{}, resp int
 	if err := cc.ReadResponseHeader(&response); err != nil {
 		return err
 	}
+	if response.Error != "" {
+		cc.ReadResponseBody(nil)
+		return rpc.ServerError(response.Error)
+	}
 	if err := cc.ReadResponseBody(resp); err != nil {
 		return err
-	}
-	if response.Error != "" {
-		return rpc.ServerError(response.Error)
 	}
 	return nil
 }
