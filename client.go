@@ -1,8 +1,11 @@
 package msgpackrpc
 
 import (
+	"errors"
 	"net/rpc"
 	"sync/atomic"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 var (
@@ -26,11 +29,15 @@ func CallWithCodec(cc rpc.ClientCodec, method string, args interface{}, resp int
 	if err := cc.ReadResponseHeader(&response); err != nil {
 		return err
 	}
+	if response.Error != "" {
+		err := errors.New(response.Error)
+		if readErr := cc.ReadResponseBody(nil); readErr != nil {
+			err = multierror.Append(err, readErr)
+		}
+		return rpc.ServerError(err.Error())
+	}
 	if err := cc.ReadResponseBody(resp); err != nil {
 		return err
-	}
-	if response.Error != "" {
-		return rpc.ServerError(response.Error)
 	}
 	return nil
 }
