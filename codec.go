@@ -30,22 +30,7 @@ type MsgpackCodec struct {
 // rpc Codec using a default handle. It also provides controls for enabling and
 // disabling buffering for both reads and writes.
 func NewCodec(bufReads, bufWrites bool, conn io.ReadWriteCloser) *MsgpackCodec {
-	cc := &MsgpackCodec{
-		conn: conn,
-	}
-	if bufReads {
-		cc.bufR = bufio.NewReader(conn)
-		cc.dec = codec.NewDecoder(cc.bufR, msgpackHandle)
-	} else {
-		cc.dec = codec.NewDecoder(cc.conn, msgpackHandle)
-	}
-	if bufWrites {
-		cc.bufW = bufio.NewWriter(conn)
-		cc.enc = codec.NewEncoder(cc.bufW, msgpackHandle)
-	} else {
-		cc.enc = codec.NewEncoder(cc.conn, msgpackHandle)
-	}
-	return cc
+	return NewCodecFromHandle(bufReads, bufWrites, conn, msgpackHandle)
 }
 
 // NewCodecFromHandle returns a MsgpackCodec that can be used as either a Client
