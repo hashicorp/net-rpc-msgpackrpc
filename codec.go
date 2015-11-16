@@ -26,24 +26,32 @@ type MsgpackCodec struct {
 	writeLock sync.Mutex
 }
 
-// NewCodec returns a MsgpackCodec that can be used as either
-// a Client or Server rpc Codec. It also provides controls for
-// enabling and disabling buffering for both reads and writes.
+// NewCodec returns a MsgpackCodec that can be used as either a Client or Server
+// rpc Codec using a default handle. It also provides controls for enabling and
+// disabling buffering for both reads and writes.
 func NewCodec(bufReads, bufWrites bool, conn io.ReadWriteCloser) *MsgpackCodec {
+	return NewCodecFromHandle(bufReads, bufWrites, conn, msgpackHandle)
+}
+
+// NewCodecFromHandle returns a MsgpackCodec that can be used as either a Client
+// or Server rpc Codec using the passed handle. It also provides controls for
+// enabling and disabling buffering for both reads and writes.
+func NewCodecFromHandle(bufReads, bufWrites bool, conn io.ReadWriteCloser,
+	h *codec.MsgpackHandle) *MsgpackCodec {
 	cc := &MsgpackCodec{
 		conn: conn,
 	}
 	if bufReads {
 		cc.bufR = bufio.NewReader(conn)
-		cc.dec = codec.NewDecoder(cc.bufR, msgpackHandle)
+		cc.dec = codec.NewDecoder(cc.bufR, h)
 	} else {
-		cc.dec = codec.NewDecoder(cc.conn, msgpackHandle)
+		cc.dec = codec.NewDecoder(cc.conn, h)
 	}
 	if bufWrites {
 		cc.bufW = bufio.NewWriter(conn)
-		cc.enc = codec.NewEncoder(cc.bufW, msgpackHandle)
+		cc.enc = codec.NewEncoder(cc.bufW, h)
 	} else {
-		cc.enc = codec.NewEncoder(cc.conn, msgpackHandle)
+		cc.enc = codec.NewEncoder(cc.conn, h)
 	}
 	return cc
 }
