@@ -6,6 +6,7 @@ package msgpackrpc
 import (
 	"io"
 	"net"
+
 	"github.com/hashicorp/go-msgpack/net/rpc"
 )
 
