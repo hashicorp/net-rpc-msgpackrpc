@@ -70,7 +70,19 @@ func (cc *MsgpackCodec) ReadRequestBody(out interface{}) error {
 func (cc *MsgpackCodec) WriteResponse(r *rpc.Response, body interface{}) error {
 	cc.writeLock.Lock()
 	defer cc.writeLock.Unlock()
-	return cc.write(r, body)
+	if cc.closed {
+		return io.EOF
+	}
+	if err := cc.enc.Encode(r); err != nil {
+		return err
+	}
+	if err := cc.enc.Encode(body); err != nil {
+		return err
+	}
+	if cc.bufW != nil {
+		return cc.bufW.Flush()
+	}
+	return nil
 }
 
 func (cc *MsgpackCodec) ReadResponseHeader(r *rpc.Response) error {
@@ -84,7 +96,19 @@ func (cc *MsgpackCodec) ReadResponseBody(out interface{}) error {
 func (cc *MsgpackCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 	cc.writeLock.Lock()
 	defer cc.writeLock.Unlock()
-	return cc.write(r, body)
+	if cc.closed {
+		return io.EOF
+	}
+	if err := cc.enc.Encode(r); err != nil {
+		return err
+	}
+	if err := cc.enc.Encode(body); err != nil {
+		return err
+	}
+	if cc.bufW != nil {
+		return cc.bufW.Flush()
+	}
+	return nil
 }
 
 func (cc *MsgpackCodec) Close() error {
@@ -93,22 +117,6 @@ func (cc *MsgpackCodec) Close() error {
 	}
 	cc.closed = true
 	return cc.conn.Close()
-}
-
-func (cc *MsgpackCodec) write(obj1, obj2 interface{}) (err error) {
-	if cc.closed {
-		return io.EOF
-	}
-	if err = cc.enc.Encode(obj1); err != nil {
-		return
-	}
-	if err = cc.enc.Encode(obj2); err != nil {
-		return
-	}
-	if cc.bufW != nil {
-		return cc.bufW.Flush()
-	}
-	return
 }
 
 func (cc *MsgpackCodec) read(obj interface{}) (err error) {
