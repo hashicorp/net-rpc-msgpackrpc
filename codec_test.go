@@ -4,6 +4,7 @@
 package msgpackrpc
 
 import (
+	"errors"
 	"io"
 	"net"
 	"net/rpc"
@@ -171,5 +172,56 @@ func TestMsgpackCodec_Close(t *testing.T) {
 	// Further read operations should also return io.EOF.
 	if err := codec.ReadResponseHeader(&rpc.Response{}); err != io.EOF {
 		t.Errorf("ReadResponseHeader after Close: got %v, want io.EOF", err)
+	}
+}
+
+// failingConn is an io.ReadWriteCloser that simulates a write error and records when it’s closed.
+type failingConn struct {
+	closed bool
+}
+
+func (fc *failingConn) Read(p []byte) (n int, err error) {
+	return 0, io.EOF
+}
+
+func (fc *failingConn) Write(p []byte) (n int, err error) {
+	return 0, errors.New("simulated write error")
+}
+
+func (fc *failingConn) Close() error {
+	fc.closed = true
+	return nil
+}
+
+// TestWriteResponse_ErrorClosesConn ensures that if an error occurs during WriteResponse,
+// the underlying connection is closed.
+func TestWriteResponse_ErrorClosesConn(t *testing.T) {
+	// Create a connection that always fails on Write.
+	fc := &failingConn{}
+	// Use buffering (so that cc.bufW is non-nil) to force a flush.
+	codec := NewCodec(true, true, fc)
+
+	// Prepare a dummy response.
+	resp := &rpc.Response{
+		ServiceMethod: "Test.Method",
+		Seq:           42,
+	}
+
+	// Invoke WriteResponse; since our connection always errors on Write,
+	// we expect an error.
+	err := codec.WriteResponse(resp, "test payload")
+	if err == nil {
+		t.Fatal("expected error from WriteResponse, got nil")
+	}
+
+	// Our intended behavior is that a WriteResponse error causes the connection to be closed.
+	if !fc.closed {
+		t.Error("expected connection to be closed after WriteResponse error, but it wasn't")
+	}
+
+	// With the connection closed, further writes should immediately return io.EOF.
+	err = codec.WriteResponse(resp, "test payload")
+	if err != io.EOF {
+		t.Errorf("expected io.EOF after connection closed, got: %v", err)
 	}
 }
