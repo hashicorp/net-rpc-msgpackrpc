@@ -67,10 +67,40 @@ func (cc *MsgpackCodec) ReadRequestBody(out interface{}) error {
 	return cc.read(out)
 }
 
+// WriteResponse encodes the provided *rpc.Response header and its associated
+// body, writing both to the underlying connection using Msgpack encoding.
+//
+// If an error occurs at any stage of encoding the header, encoding the body, or
+// flushing the buffered writer (if one is used), the codec will close the
+// underlying connection. This is done because the net/rpc package (which is
+// frozen) does not propagate errors returned by WriteResponse, but optionally
+// logs them. By closing the connection on error, we ensure that the codec (and
+// underlying connection) is not used further in an inconsistent state, and
+// subsequent calls immediately return io.EOF.
+//
+// Note: It is assumed that once an error is encountered, further communication
+// using this codec is unsafe.
 func (cc *MsgpackCodec) WriteResponse(r *rpc.Response, body interface{}) error {
 	cc.writeLock.Lock()
 	defer cc.writeLock.Unlock()
-	return cc.write(r, body)
+	if cc.closed {
+		return io.EOF
+	}
+	if err := cc.enc.Encode(r); err != nil {
+		cc.Close()
+		return err
+	}
+	if err := cc.enc.Encode(body); err != nil {
+		cc.Close()
+		return err
+	}
+	if cc.bufW != nil {
+		if err := cc.bufW.Flush(); err != nil {
+			cc.Close()
+			return err
+		}
+	}
+	return nil
 }
 
 func (cc *MsgpackCodec) ReadResponseHeader(r *rpc.Response) error {
@@ -81,10 +111,28 @@ func (cc *MsgpackCodec) ReadResponseBody(out interface{}) error {
 	return cc.read(out)
 }
 
+// WriteRequest encodes the provided *rpc.Response header and its associated
+// body, writing both to the underlying connection using Msgpack encoding.
+//
+// When WriteRequest returns an error to net/rpc, it is propagated to the
+// caller. This allows the caller to deal with the error unlike how
+// WriteResponse has to close the Codec (and connection).
 func (cc *MsgpackCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 	cc.writeLock.Lock()
 	defer cc.writeLock.Unlock()
-	return cc.write(r, body)
+	if cc.closed {
+		return io.EOF
+	}
+	if err := cc.enc.Encode(r); err != nil {
+		return err
+	}
+	if err := cc.enc.Encode(body); err != nil {
+		return err
+	}
+	if cc.bufW != nil {
+		return cc.bufW.Flush()
+	}
+	return nil
 }
 
 func (cc *MsgpackCodec) Close() error {
@@ -93,22 +141,6 @@ func (cc *MsgpackCodec) Close() error {
 	}
 	cc.closed = true
 	return cc.conn.Close()
-}
-
-func (cc *MsgpackCodec) write(obj1, obj2 interface{}) (err error) {
-	if cc.closed {
-		return io.EOF
-	}
-	if err = cc.enc.Encode(obj1); err != nil {
-		return
-	}
-	if err = cc.enc.Encode(obj2); err != nil {
-		return
-	}
-	if cc.bufW != nil {
-		return cc.bufW.Flush()
-	}
-	return
 }
 
 func (cc *MsgpackCodec) read(obj interface{}) (err error) {
