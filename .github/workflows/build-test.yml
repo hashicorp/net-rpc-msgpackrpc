@@ -10,17 +10,17 @@ jobs:
 
         steps:
             - name: Checkout Code
-              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+              uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.5.0
             - name: Setup Go
               uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
               with:
                 go-version: '1.23'
             - name: Run golanci-lint
-              uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9
+              uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 # v8.0.0
             - name: Run test and generate coverage report
               run: go test -v ./... -coverprofile=coverage.out
             - name: Upload Covergae Report
-              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
               with:
                 path: coverage.out
                 name: Coverage-report
