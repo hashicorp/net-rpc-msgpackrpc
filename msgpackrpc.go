@@ -1,4 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
+// Copyright IBM Corp. 2013, 2025
 // SPDX-License-Identifier: MIT
 
 // Package msgpackrpc implements a MessagePack-RPC ClientCodec and ServerCodec
