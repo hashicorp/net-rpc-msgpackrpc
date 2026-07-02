@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2013, 2025
+// Copyright IBM Corp. 2013, 2026
 // SPDX-License-Identifier: MIT
 
 package msgpackrpc
@@ -32,8 +32,8 @@ func TestMsgpackCodec_RequestResponse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a pair of connected endpoints.
 			clientConn, serverConn := net.Pipe()
-			defer clientConn.Close()
-			defer serverConn.Close()
+			defer func() { _ = clientConn.Close() }()
+			defer func() { _ = serverConn.Close() }()
 
 			// Create client and server codecs using the same msgpack handle.
 			clientCodec := NewCodecFromHandle(tt.bufReads, tt.bufWrites, clientConn, msgpackHandle)
@@ -121,8 +121,8 @@ func TestMsgpackCodec_RequestResponse(t *testing.T) {
 // implementation of read always attempts to decode even when obj == nil.)
 func TestMsgpackCodec_NilBody(t *testing.T) {
 	clientConn, serverConn := net.Pipe()
-	defer clientConn.Close()
-	defer serverConn.Close()
+	defer func() { _ = clientConn.Close() }()
+	defer func() { _ = serverConn.Close() }()
 
 	clientCodec := NewCodec(true, true, clientConn)
 	serverCodec := NewCodec(true, true, serverConn)
