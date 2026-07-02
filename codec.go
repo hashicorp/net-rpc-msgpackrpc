@@ -1,4 +1,4 @@
-// Copyright IBM Corp. 2013, 2025
+// Copyright IBM Corp. 2013, 2026
 // SPDX-License-Identifier: MIT
 
 package msgpackrpc
@@ -87,16 +87,16 @@ func (cc *MsgpackCodec) WriteResponse(r *rpc.Response, body interface{}) error {
 		return io.EOF
 	}
 	if err := cc.enc.Encode(r); err != nil {
-		cc.Close()
+		_ = cc.Close()
 		return err
 	}
 	if err := cc.enc.Encode(body); err != nil {
-		cc.Close()
+		_ = cc.Close()
 		return err
 	}
 	if cc.bufW != nil {
 		if err := cc.bufW.Flush(); err != nil {
-			cc.Close()
+			_ = cc.Close()
 			return err
 		}
 	}
